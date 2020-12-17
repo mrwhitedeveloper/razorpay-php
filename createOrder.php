@@ -1,4 +1,5 @@
 <?php 
+//https://razorpay.com/docs/api/orders/#create-an-order
 require_once('razorpay/Razorpay.php'); 
 use Razorpay\Api\Api;
 $api = new Api("rzp_key_goes_here", "rzp_secret_goes_here");

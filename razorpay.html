@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Payment using Jquery and PHP - Mrwhitedeveloper</title>
+    <meta name="description" content="Razorpay Payment using Jquery and PHP - Mrwhitedeveloper">
+    <meta name="keywords" content="Razorpay, Jquery, JavaScript">
+    <meta name="author" content="Mrwhitedeveloper">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+
+</head>
+
+<body>
+    <h1>Razorpay Payment using Jquery and PHP - Mrwhitedeveloper</h1>
+    <form action="" id="pForm" class="col-md-6 mx-auto">
+        <div class="row">
+
+            <div class="col-sm-12">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" class="form-control" placeholder="Name" name="name" id="name">
+                </div>
+            </div>
+
+            <div class="col-sm-12">
+                <div class="form-group">
+                    <label>Mobile No</label>
+                    <input type="number" class="form-control" placeholder="Mobile No" name="mobile" id="mobile">
+                </div>
+            </div>
+
+            <div class="col-sm-12">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" class="form-control" placeholder="Email" name="email" id="email">
+                </div>
+            </div>
+            <div class="col-sm-12">
+                <div class="form-group">
+                    <label>Price</label>
+                    <input type="number" class="form-control" placeholder="Price" name="price" id="price">
+                </div>
+            </div>
+
+            <div class="col-sm-12">
+                <div class="form-group">
+                    <input type="submit" value="Submit" class="btn btn-success" name="btnSubmit" id="btnSubmit">
+                </div>
+            </div>
+        </div>
+
+    </form>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        $(document).ready(function() {
+
+            $("#btnSubmit").click(function(e) {
+                e.preventDefault();
+                var name = $("#name").val();
+                var email = $("#email").val();
+                var mobile = $("#mobile").val(); //This is for OTP generation
+                var price = $("#price").val(); //It can be from serverside or using some radio buttons or select option
+                createOrder(price, name, email, mobile);
+            });
+
+            function createOrder(priceParameter, name, email, mobile) {
+                $.ajax({
+                    type: 'POST',
+                    url: 'createOrder.php',
+                    data: {
+                        price: priceParameter
+                    },
+                    success: function(resp) {
+                        var status = JSON.parse(resp);
+                        if (status.code == 1) {
+                            var orderID = status.orderID;
+                            makePayment(priceParameter, orderID, name, email, mobile);
+                        }
+                    },
+                    error: function() {
+                        alert("Create Order Error");
+                    }
+                });
+            }
+
+            function makePayment(price, orderID, name, email, mobile) {
+                var options = {
+                    "key": "rzp_test_key_goes_here", //
+                    "amount": price * 100, // Amount is in currency subunits. Default currency is INR. Hence, 500 refers to 500 paise means 5 Rs
+                    "currency": "INR",
+                    "name": "Mrwhitedeveloper",
+                    "description": "Payment testing created by Mrwhitedeveloper",
+                    "image": "mrwhitedeveloper.png", //your logo url
+                    "order_id": orderID, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1     
+                    "prefill": {
+                        "name": name,
+                        "email": email,
+                        "contact": mobile
+                    },
+                    "notes": {
+                        "customeParameter1": "customValue1",
+                        "customeParameter2": "customValue2"
+                    },
+
+                    "handler": function(response) {
+                        // alert(response.razorpay_payment_id);
+                        //alert(response.razorpay_order_id);
+                        //alert(response.razorpay_signature)       
+                        var form = {
+                            'payment_id': response.razorpay_payment_id,
+                            'order_id': orderID
+                        };
+                        $.ajax({
+                            type: 'POST',
+                            url: 'validatePayment.php',
+                            data: form,
+                            success: function(resp) {
+                                var status = JSON.parse(resp);
+                                if (status.code == 1) {
+                                    alert("Payment completed successfully!");
+                                    // $("$norm_form")[0].reset();
+                                }
+                            },
+                            error: function() {
+                                alert("Error occured in payment validation");
+                            }
+                        });
+                    },
+
+                    "theme": {
+                        "color": "#3399cc"
+                    }
+                };
+                var razorPayObject = new Razorpay(options); //order_rcptid_11
+
+                razorPayObject.on('payment.failed', function(response) {
+                    alert(response.error.code + " reason :" + response.error.reason);
+                    // alert(response.error.description);
+                    // alert(response.error.source);
+                    // alert(response.error.step);
+                    // alert(response.error.reason);
+                    // alert(response.error.metadata.order_id);
+                    // alert(response.error.metadata.payment_id);
+                });
+                razorPayObject.open();
+            }
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW" crossorigin="anonymous"></script>
+</body>
+
+</html>
